@@ -249,12 +249,13 @@ const SUB_NAME = /^[A-Za-z0-9_ ]{1,32}$/;
 const subNameProblem = (room, name, exceptId) => !name ? "You must enter a name for your subroom!"
     : !SUB_NAME.test(name) ? "Subroom names can only contain letters, numbers, spaces and underscores (32 max)."
     : room.SubRooms.some((s) => s.SubRoomId !== exceptId && String(s.Name).toLowerCase() === name.toLowerCase()) ? "This room already has a subroom with that name!" : null;
+function isDev(req) { try { return require("./hydrium-devedit").isDevReq(req); } catch (_) { return false; } }
 function subGate(req, res, pascal) {
     const id = Number(req.params.roomId), room = S.rooms[id];
     const deny = (m, eid) => { res.json(pascal ? { Success: false, Value: null, ErrorId: eid || "Rooms.Error", Error: m } : env(false, null, m)); return null; };
     const acct = who(req); if (acct === null) { res.status(401).json(pascal ? { Success: false, Value: null, Error: "Unauthorized" } : env(false, null, "Unauthorized")); return null; }
     if (!room) return deny("This room does not exist!", "Rooms.DoesntExist");
-    if (roleOf(room, acct) < COOWNER) return deny("You are not the owner of this room!");
+    if (!isDev(req) && roleOf(room, acct) < COOWNER) return deny("You are not the owner of this room!");
     let sub = null;
     if (req.params.subRoomId !== undefined) { sub = room.SubRooms.find((s) => s.SubRoomId === Number(req.params.subRoomId)); if (!sub) return deny("This subroom does not exist!", "Rooms.DoesntExist"); }
     return { acct, room, sub };
@@ -323,7 +324,7 @@ function owned(req, res) {
     const acct = who(req); if (acct === null) { res.status(401).json(env(false, null, "Unauthorized")); return null; }
     const room = S.rooms[Number(req.params.roomId)];
     if (!room) { res.json(env(false, null, "This room does not exist!")); return null; }
-    if (roleOf(room, acct) < COOWNER) { res.json(env(false, null, "You do not have permission to change this room.")); return null; }
+    if (!isDev(req) && roleOf(room, acct) < COOWNER) { res.json(env(false, null, "You do not have permission to change this room.")); return null; }
     return { acct, room };
 }
 const settings = {

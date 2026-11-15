@@ -535,6 +535,14 @@ function savePlatformLink(
     const links =
         loadPlatformLinks();
 
+    // One platform account (platform+platformId, e.g. one Steam ID) can only ever
+    // be the SAME Hydrium accountId. Match on platform+platformId alone (not also
+    // accountId): if that platform account was ever linked to a different
+    // accountId before (e.g. a stale/duplicate account from an earlier bug or
+    // test), replace that link instead of keeping both rows around - otherwise
+    // allPlatformLinks() keeps answering with every account that platform id was
+    // ever linked to, and the client's account-switcher shows all of them,
+    // including accounts nobody meant to still be reachable from there.
     const existing =
         links.find(
             (link) =>
@@ -551,7 +559,6 @@ function savePlatformLink(
                     String(
                         platformId
                     )
-         && Number(link.accountId) === Number(accountId)
     );
 
     const now =
@@ -559,6 +566,10 @@ function savePlatformLink(
             .toISOString();
 
     if (existing) {
+
+        if (Number(existing.accountId) !== Number(accountId)) {
+            console.log(`[AUTH] Platform link ${platform}:${platformId} was pointing at account ${existing.accountId}, replacing with ${accountId}`);
+        }
 
         existing.accountId =
             Number(
