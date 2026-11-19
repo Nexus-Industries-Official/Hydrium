@@ -3,6 +3,7 @@
 //   DELETE /rooms/:id/leaderboards/:n   the game deletes leaderboard slots blindly when it tears a room down
 //   GET    /api/testcasemanagement/*    QA calls from the client
 //   POST   /api/freegifts/v1/sendmultiple   "send a gift to friends"
+//   GET    /commonQuery/userSegment     A/B-test segment lookup, polled on startup
 //   GET    /favicon.ico
 // Mount it LAST (after your other modules): it only answers what nothing else did.
 //   app.use(require("./hydrium-fixes5").router);
@@ -32,6 +33,11 @@ router.post("/api/freegifts/v1/sendmultiple", json, (req, res) => {
     console.log(`[FIXES5] Friend-O-Tron: ${me} -> ${sent.join(",") || "nobody"} (${tokens} tokens each)`);
     res.json({ success: true, error: "", value: null });
 });
+// Used for A/B-test / feature-flag cohort assignment ("which experiment bucket is this
+// account in"). Not in RecFlare's own reference implementation either -- there's no real
+// experimentation backend here, so an empty list is "not in any segment," the same
+// no-op-but-not-an-error shape RecFlare itself uses for its own empty-corpus lookups.
+router.get("/commonQuery/userSegment", (req, res) => res.json([]));
 router.get("/favicon.ico", (req, res) => res.status(204).end());
 
 module.exports = { router };
